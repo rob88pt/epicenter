@@ -27,8 +27,8 @@
  * ```
  */
 
-import type { StandardSchemaV1 } from '@standard-schema/spec';
 import type * as Y from 'yjs';
+import type { StandardSchemaWithJSONSchema } from '../shared/standard-schema/types.js';
 import {
 	YKeyValueLww,
 	type YKeyValueLwwChange,
@@ -67,7 +67,7 @@ export function createKv<TKvDefinitions extends KvDefinitions>(
 	 */
 	function parseValue<TValue>(
 		raw: unknown,
-		definition: KvDefinition<readonly StandardSchemaV1[]>,
+		definition: KvDefinition<readonly StandardSchemaWithJSONSchema[]>,
 	): KvGetResult<TValue> {
 		const result = definition.schema['~standard'].validate(raw);
 		if (result instanceof Promise)
