@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { Button } from '@epicenter/ui/button';
 	import { Skeleton } from '@epicenter/ui/skeleton';
+	import TrashIcon from '@lucide/svelte/icons/trash-2';
 	import { createQuery } from '@tanstack/svelte-query';
 	import { confirmationDialog } from '$lib/components/ConfirmationDialog.svelte';
-	import TrashIcon from '@lucide/svelte/icons/trash-2';
 	import { rpc } from '$lib/query';
 	import EditTransformationModal from './EditTransformationModal.svelte';
 

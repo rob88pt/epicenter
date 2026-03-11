@@ -4,11 +4,11 @@
 	import { Separator } from '@epicenter/ui/separator';
 	import { Spinner } from '@epicenter/ui/spinner';
 	import HistoryIcon from '@lucide/svelte/icons/history';
+	import EditIcon from '@lucide/svelte/icons/pencil';
 	import PlayIcon from '@lucide/svelte/icons/play';
 	import TrashIcon from '@lucide/svelte/icons/trash-2';
 	import { createMutation } from '@tanstack/svelte-query';
 	import { confirmationDialog } from '$lib/components/ConfirmationDialog.svelte';
-	import EditIcon from '@lucide/svelte/icons/pencil';
 	import { Editor } from '$lib/components/transformations-editor';
 	import { rpc } from '$lib/query';
 	import type { Transformation } from '$lib/services/isomorphic/db';

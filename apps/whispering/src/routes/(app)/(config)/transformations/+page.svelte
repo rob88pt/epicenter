@@ -10,6 +10,7 @@
 	import * as Table from '@epicenter/ui/table';
 	import { SelectAllPopover, SortableTableHeader } from '@epicenter/ui/table';
 	import SearchIcon from '@lucide/svelte/icons/search';
+	import TrashIcon from '@lucide/svelte/icons/trash-2';
 	import WandSparklesIcon from '@lucide/svelte/icons/wand-sparkles';
 	import { createQuery } from '@tanstack/svelte-query';
 	import {
@@ -31,7 +32,6 @@
 	import { type } from 'arktype';
 	import { createRawSnippet } from 'svelte';
 	import { confirmationDialog } from '$lib/components/ConfirmationDialog.svelte';
-	import TrashIcon from '@lucide/svelte/icons/trash-2';
 	import OpenFolderButton from '$lib/components/OpenFolderButton.svelte';
 	import { PATHS } from '$lib/constants/paths';
 	import { rpc } from '$lib/query';
