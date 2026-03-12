@@ -5,9 +5,10 @@ import {
 } from '@better-auth/oauth-provider';
 import { sValidator } from '@hono/standard-validator';
 import { type } from 'arktype';
-import { betterAuth } from 'better-auth';
+import { type BetterAuthOptions, betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { bearer } from 'better-auth/plugins/bearer';
+import { deviceAuthorization } from 'better-auth/plugins/device-authorization';
 import { jwt } from 'better-auth/plugins/jwt';
 import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres';
 import type { Context } from 'hono';
@@ -18,6 +19,7 @@ import pg from 'pg';
 import { aiChatHandlers } from './ai-chat';
 import { MAX_PAYLOAD_BYTES } from './constants';
 import * as schema from './db/schema';
+import { devicePage } from './device-page';
 
 export { DocumentRoom } from './document-room';
 // Re-export so wrangler types generates DurableObjectNamespace<WorkspaceRoom|DocumentRoom>
@@ -55,7 +57,7 @@ export const BASE_AUTH_CONFIG = {
 			trustedProviders: ['google', 'email-password'],
 		},
 	},
-} as const;
+} satisfies BetterAuthOptions;
 
 /** Creates a Better Auth instance using an already-connected Drizzle instance. */
 function createAuth(db: Db, env: Env['Bindings']) {
@@ -73,6 +75,11 @@ function createAuth(db: Db, env: Env['Bindings']) {
 		plugins: [
 			bearer(),
 			jwt(),
+			deviceAuthorization({
+				verificationUri: '/device',
+				expiresIn: '10m',
+				interval: '5s',
+			}),
 			oauthProvider({
 				loginPage: '/sign-in',
 				consentPage: '/consent',
@@ -92,6 +99,14 @@ function createAuth(db: Db, env: Env['Bindings']) {
 						name: 'Epicenter Mobile',
 						type: 'native',
 						redirectUrls: ['epicenter://auth/callback'],
+						skipConsent: true,
+						metadata: {},
+					},
+					{
+						clientId: 'epicenter-runner',
+						name: 'Epicenter Runner',
+						type: 'native',
+						redirectUrls: [],
 						skipConsent: true,
 						metadata: {},
 					},
@@ -195,6 +210,12 @@ app.get(
 	}),
 	(c) => c.json({ mode: 'hub', version: '0.1.0', runtime: 'cloudflare' }),
 );
+
+// Device authorization verification page (RFC 8628)
+app.get('/device', (c) => {
+	const userCode = c.req.query('user_code');
+	return c.html(devicePage(userCode));
+});
 
 // Auth
 app.on(
