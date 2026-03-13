@@ -57,9 +57,77 @@ export const BASE_AUTH_CONFIG = {
 			trustedProviders: ['google', 'email-password'],
 		},
 	},
+	plugins: [
+		bearer(),
+		jwt(),
+		deviceAuthorization({
+			verificationUri: '/device',
+			expiresIn: '10m',
+			interval: '5s',
+		}),
+		oauthProvider({
+			loginPage: '/sign-in',
+			consentPage: '/consent',
+			requirePKCE: true,
+			allowDynamicClientRegistration: false,
+			/**
+			 * First-party OAuth clients hardcoded in config rather than stored in the
+			 * `oauth_client` database table. These are apps we own and control.
+			 *
+			 * Each entry maps to an OAuth 2.0 client registration:
+			 * - `clientId` — Arbitrary stable identifier. The client sends this as `client_id`
+			 *   in OAuth flows. Changing it breaks existing installations.
+			 * - `name` — Human-readable label shown on the consent screen. Not visible when
+			 *   `skipConsent` is true, but useful for admin dashboards and debugging.
+			 * - `type` — `'native'` = public client (desktop/mobile app that can't store a
+			 *   client secret). Alternatives: `'web'` (confidential server-side app).
+			 * - `redirectUrls` — Exact-match allowlist for `redirect_uri` in OAuth flows.
+			 *   Empty for the runner because it uses the device code flow (no redirects).
+			 * - `skipConsent` — Bypass the "App X wants to access your account" screen.
+			 *   Safe for first-party apps where we own both sides.
+			 * - `metadata` — Arbitrary JSON for your own use. Better Auth doesn't read it.
+			 */
+			trustedClients: [
+				{
+					clientId: 'epicenter-desktop',
+					name: 'Epicenter Desktop',
+					type: 'native',
+					redirectUrls: ['tauri://localhost/auth/callback'],
+					skipConsent: true,
+					metadata: {},
+				},
+				{
+					clientId: 'epicenter-mobile',
+					name: 'Epicenter Mobile',
+					type: 'native',
+					redirectUrls: ['epicenter://auth/callback'],
+					skipConsent: true,
+					metadata: {},
+				},
+				{
+					clientId: 'epicenter-runner',
+					name: 'Epicenter Runner',
+					type: 'native',
+					redirectUrls: [],
+					skipConsent: true,
+					metadata: {},
+				},
+			],
+		}),
+	],
 } satisfies BetterAuthOptions;
 
-/** Creates a Better Auth instance using an already-connected Drizzle instance. */
+/**
+ * Creates a Better Auth instance for the Cloudflare Worker runtime.
+ *
+ * Spreads `BASE_AUTH_CONFIG` for shared options (plugins, account linking, etc.)
+ * and adds everything that depends on Cloudflare bindings: database connection,
+ * secrets, social providers, session storage, and cookie config.
+ *
+ * `baseURL` comes from the `BASE_URL` wrangler var (`https://api.epicenter.so` in
+ * production, auto-set by wrangler dev locally). The CLI config in
+ * `better-auth.config.ts` hardcodes the dev URL instead since it never runs in prod.
+ */
 function createAuth(db: Db, env: Env['Bindings']) {
 	return betterAuth({
 		...BASE_AUTH_CONFIG,
@@ -72,47 +140,6 @@ function createAuth(db: Db, env: Env['Bindings']) {
 				clientSecret: env.GOOGLE_CLIENT_SECRET,
 			},
 		},
-		plugins: [
-			bearer(),
-			jwt(),
-			deviceAuthorization({
-				verificationUri: '/device',
-				expiresIn: '10m',
-				interval: '5s',
-			}),
-			oauthProvider({
-				loginPage: '/sign-in',
-				consentPage: '/consent',
-				requirePKCE: true,
-				allowDynamicClientRegistration: false,
-				trustedClients: [
-					{
-						clientId: 'epicenter-desktop',
-						name: 'Epicenter Desktop',
-						type: 'native',
-						redirectUrls: ['tauri://localhost/auth/callback'],
-						skipConsent: true,
-						metadata: {},
-					},
-					{
-						clientId: 'epicenter-mobile',
-						name: 'Epicenter Mobile',
-						type: 'native',
-						redirectUrls: ['epicenter://auth/callback'],
-						skipConsent: true,
-						metadata: {},
-					},
-					{
-						clientId: 'epicenter-runner',
-						name: 'Epicenter Runner',
-						type: 'native',
-						redirectUrls: [],
-						skipConsent: true,
-						metadata: {},
-					},
-				],
-			}),
-		],
 		session: {
 			expiresIn: 60 * 60 * 24 * 7,
 			updateAge: 60 * 60 * 24,
