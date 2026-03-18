@@ -22,8 +22,8 @@ import type { Argv, CommandModule } from 'yargs';
 import * as Y from 'yjs';
 import type { DiscoveredWorkspace } from '../config/resolve-config';
 import { loadClientFromPath } from '../config/load-config';
-import { formatYargsOptions, output, outputError } from '../format-output';
-import { workspacesDir } from '../paths';
+import { formatYargsOptions, output, outputError } from '../util/format-output';
+import { workspacesDir } from '../util/paths';
 
 /**
  * Build the `workspace` command group with subcommands for managing local workspaces.
