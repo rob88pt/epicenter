@@ -22,6 +22,7 @@ import * as schema from './db/schema';
 import {
  	renderConsentPage,
 	renderDevicePage,
+	renderSignedInPage,
 	renderSignInPage,
 } from './auth-pages';
 
@@ -308,6 +309,9 @@ app.get('/sign-in', async (c) => {
 		if (callbackURL && callbackURL.startsWith('/')) {
 			return c.redirect(callbackURL);
 		}
+		// Already signed in, no redirect needed — show signed-in confirmation
+		const displayName = session.user.name ?? session.user.email;
+		return c.html(renderSignedInPage({ displayName, email: session.user.email }));
 	}
 	return c.html(renderSignInPage());
 });
