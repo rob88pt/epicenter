@@ -20,8 +20,8 @@ import {
 } from 'jsrepo';
 import type { Argv, CommandModule } from 'yargs';
 import * as Y from 'yjs';
-import type { DiscoveredWorkspace } from '../discovery';
-import { loadClientFromPath } from '../discovery';
+import type { DiscoveredWorkspace } from '../config/resolve-config';
+import { loadClientFromPath } from '../config/load-config';
 import { formatYargsOptions, output, outputError } from '../format-output';
 import { workspacesDir } from '../paths';
 
