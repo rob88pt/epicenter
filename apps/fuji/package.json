@@ -12,6 +12,7 @@
 	},
 	"devDependencies": {
 		"@epicenter/ui": "workspace:*",
+		"bun-types": "catalog:",
 		"@lucide/svelte": "catalog:",
 		"@sveltejs/adapter-static": "catalog:",
 		"@sveltejs/kit": "catalog:",
@@ -26,6 +27,7 @@
 		"vite": "catalog:"
 	},
 	"dependencies": {
+		"@epicenter/svelte": "workspace:*",
 		"@epicenter/workspace": "workspace:*",
 		"@tanstack/svelte-query": "catalog:",
 		"@tanstack/svelte-query-devtools": "catalog:",
@@ -44,5 +46,6 @@
 		"wellcrafted": "catalog:",
 		"y-prosemirror": "^1.3.7",
 		"yjs": "catalog:"
-	}
+	},
+	"license": "MIT"
 }

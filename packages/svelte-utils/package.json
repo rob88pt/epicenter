@@ -1,5 +1,5 @@
 {
-	"name": "@epicenter/svelte-utils",
+	"name": "@epicenter/svelte",
 	"version": "0.0.1",
 	"private": true,
 	"type": "module",
@@ -9,6 +9,7 @@
 		"./createPersistedState": "./src/createPersistedState.svelte.ts"
 	},
 	"dependencies": {
+		"@epicenter/workspace": "workspace:*",
 		"wellcrafted": "catalog:"
 	},
 	"devDependencies": {
@@ -20,5 +21,6 @@
 	},
 	"scripts": {
 		"typecheck": "svelte-check --tsconfig ./tsconfig.json"
-	}
+	},
+	"license": "MIT"
 }
