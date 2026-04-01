@@ -225,24 +225,76 @@ async fn write_text(app: tauri::AppHandle, text: String) -> Result<(), String> {
 
     // Use virtual key codes for V to work with any keyboard layout
     #[cfg(target_os = "macos")]
-    let (modifier, v_key) = (Key::Meta, Key::Other(9)); // Virtual key code for V on macOS
+    let (modifier, v_key, use_shift) = (Key::Meta, Key::Other(9), false); // Virtual key code for V on macOS
     #[cfg(target_os = "windows")]
-    let (modifier, v_key) = (Key::Control, Key::Other(0x56)); // VK_V on Windows
+    let (modifier, v_key, use_shift) = (Key::Control, Key::Other(0x56), false); // VK_V on Windows
     #[cfg(target_os = "linux")]
-    let (modifier, v_key) = (Key::Control, Key::Unicode('v')); // Fallback for Linux
+    let (modifier, v_key, use_shift) = {
+        // Terminals use Ctrl+Shift+V instead of Ctrl+V. Detect by checking the
+        // focused window's WM_CLASS via xdotool.
+        let is_terminal = std::process::Command::new("sh")
+            .args(["-c", "xprop -id $(xdotool getactivewindow) WM_CLASS 2>/dev/null"])
+            .output()
+            .ok()
+            .and_then(|o| String::from_utf8(o.stdout).ok())
+            .map(|class| {
+                let class = class.trim().to_lowercase();
+                [
+                    "gnome-terminal",
+                    "konsole",
+                    "xfce4-terminal",
+                    "mate-terminal",
+                    "terminator",
+                    "tilix",
+                    "alacritty",
+                    "kitty",
+                    "wezterm",
+                    "foot",
+                    "st",
+                    "urxvt",
+                    "xterm",
+                    "sakura",
+                    "guake",
+                    "yakuake",
+                    "tilda",
+                    "hyper",
+                    "termux",
+                    "rio",
+                    "ghostty",
+                    "contour",
+                    "blackbox",
+                ]
+                .iter()
+                .any(|t| class.contains(t))
+                    || class.contains("terminal")
+                    || class.contains("term")
+            })
+            .unwrap_or(false);
+        (Key::Control, Key::Unicode('v'), is_terminal)
+    };
 
-    // Press modifier + V
+    // Press modifier (+ Shift for terminals) + V
     enigo
         .key(modifier, Direction::Press)
         .map_err(|e| format!("Failed to press modifier key: {}", e))?;
+    if use_shift {
+        enigo
+            .key(Key::Shift, Direction::Press)
+            .map_err(|e| format!("Failed to press Shift key: {}", e))?;
+    }
     enigo
         .key(v_key, Direction::Press)
         .map_err(|e| format!("Failed to press V key: {}", e))?;
 
-    // Release V + modifier (in reverse order for proper cleanup)
+    // Release V (+ Shift) + modifier (in reverse order for proper cleanup)
     enigo
         .key(v_key, Direction::Release)
         .map_err(|e| format!("Failed to release V key: {}", e))?;
+    if use_shift {
+        enigo
+            .key(Key::Shift, Direction::Release)
+            .map_err(|e| format!("Failed to release Shift key: {}", e))?;
+    }
     enigo
         .key(modifier, Direction::Release)
         .map_err(|e| format!("Failed to release modifier key: {}", e))?;
