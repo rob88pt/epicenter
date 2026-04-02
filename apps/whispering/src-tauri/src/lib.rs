@@ -220,25 +220,39 @@ async fn write_text(app: tauri::AppHandle, text: String) -> Result<(), String> {
     // Small delay to ensure clipboard is updated
     tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
 
-    // 3. Simulate paste operation using virtual key codes (layout-independent)
-    let mut enigo = Enigo::new(&Settings::default()).map_err(|e| e.to_string())?;
-
-    // Use virtual key codes for V to work with any keyboard layout
-    #[cfg(target_os = "macos")]
-    let (modifier, v_key, use_shift) = (Key::Meta, Key::Other(9), false); // Virtual key code for V on macOS
-    #[cfg(target_os = "windows")]
-    let (modifier, v_key, use_shift) = (Key::Control, Key::Other(0x56), false); // VK_V on Windows
+    // 3. Simulate paste operation
     #[cfg(target_os = "linux")]
-    let (modifier, v_key, use_shift) = {
-        // Terminals use Ctrl+Shift+V instead of Ctrl+V. Detect by checking the
-        // focused window's WM_CLASS via xdotool.
-        let is_terminal = std::process::Command::new("sh")
-            .args(["-c", "xprop -id $(xdotool getactivewindow) WM_CLASS 2>/dev/null"])
+    {
+        // On Linux, use xdotool instead of enigo for reliable key simulation.
+        // xdotool --clearmodifiers prevents stuck modifier keys from interfering
+        // and --window targets the correct window regardless of focus changes.
+        let target_window = std::process::Command::new("xdotool")
+            .args(["getactivewindow"])
             .output()
             .ok()
             .and_then(|o| String::from_utf8(o.stdout).ok())
-            .map(|class| {
-                let class = class.trim().to_lowercase();
+            .map(|s| s.trim().to_string());
+
+        // Detect terminals by WM_CLASS — they need Ctrl+Shift+V instead of Ctrl+V.
+        // xprop output format: WM_CLASS(STRING) = "instance", "class"
+        // We extract only the quoted values to avoid false matches on the
+        // "STRING" prefix (e.g. "st" matching "STRING").
+        let is_terminal = target_window
+            .as_ref()
+            .and_then(|id| {
+                std::process::Command::new("xprop")
+                    .args(["-id", id, "WM_CLASS"])
+                    .output()
+                    .ok()
+            })
+            .and_then(|o| String::from_utf8(o.stdout).ok())
+            .map(|raw| {
+                // Extract the values after "=" and check only those
+                let values = raw
+                    .split('=')
+                    .nth(1)
+                    .unwrap_or("")
+                    .to_lowercase();
                 [
                     "gnome-terminal",
                     "konsole",
@@ -250,6 +264,7 @@ async fn write_text(app: tauri::AppHandle, text: String) -> Result<(), String> {
                     "kitty",
                     "wezterm",
                     "foot",
+                    "st-256color",
                     "st",
                     "urxvt",
                     "xterm",
@@ -265,42 +280,76 @@ async fn write_text(app: tauri::AppHandle, text: String) -> Result<(), String> {
                     "blackbox",
                 ]
                 .iter()
-                .any(|t| class.contains(t))
-                    || class.contains("terminal")
-                    || class.contains("term")
+                .any(|t| {
+                    // For short names like "st", match exact quoted values
+                    // to avoid substring false positives
+                    if t.len() <= 3 {
+                        values.contains(&format!("\"{}\"", t))
+                    } else {
+                        values.contains(*t)
+                    }
+                })
+                    || values.contains("terminal")
+                    || values.contains("term")
             })
             .unwrap_or(false);
-        (Key::Control, Key::Unicode('v'), is_terminal)
-    };
 
-    // Press modifier (+ Shift for terminals) + V
-    enigo
-        .key(modifier, Direction::Press)
-        .map_err(|e| format!("Failed to press modifier key: {}", e))?;
-    if use_shift {
-        enigo
-            .key(Key::Shift, Direction::Press)
-            .map_err(|e| format!("Failed to press Shift key: {}", e))?;
+        let paste_key = if is_terminal {
+            "ctrl+shift+v"
+        } else {
+            "ctrl+v"
+        };
+
+        info!(
+            "write_text: target_window={:?}, is_terminal={}, paste_key={}",
+            target_window, is_terminal, paste_key
+        );
+
+        // Refocus the target window in case focus shifted during clipboard operations.
+        // Also dismiss any active menus (Alt-based shortcuts can activate menu bars).
+        if let Some(ref id) = target_window {
+            let _ = std::process::Command::new("xdotool")
+                .args(["windowactivate", "--sync", id])
+                .output();
+            let _ = std::process::Command::new("xdotool")
+                .args(["key", "--clearmodifiers", "Escape"])
+                .output();
+            // Small delay for the app to process the Escape and restore focus
+            std::thread::sleep(std::time::Duration::from_millis(50));
+        }
+
+        std::process::Command::new("xdotool")
+            .args(["key", "--clearmodifiers", paste_key])
+            .output()
+            .map_err(|e| format!("Failed to simulate paste via xdotool: {}", e))?;
     }
-    enigo
-        .key(v_key, Direction::Press)
-        .map_err(|e| format!("Failed to press V key: {}", e))?;
 
-    // Release V (+ Shift) + modifier (in reverse order for proper cleanup)
-    enigo
-        .key(v_key, Direction::Release)
-        .map_err(|e| format!("Failed to release V key: {}", e))?;
-    if use_shift {
+    #[cfg(not(target_os = "linux"))]
+    {
+        let mut enigo = Enigo::new(&Settings::default()).map_err(|e| e.to_string())?;
+
+        #[cfg(target_os = "macos")]
+        let (modifier, v_key) = (Key::Meta, Key::Other(9));
+        #[cfg(target_os = "windows")]
+        let (modifier, v_key) = (Key::Control, Key::Other(0x56));
+
         enigo
-            .key(Key::Shift, Direction::Release)
-            .map_err(|e| format!("Failed to release Shift key: {}", e))?;
+            .key(modifier, Direction::Press)
+            .map_err(|e| format!("Failed to press modifier key: {}", e))?;
+        enigo
+            .key(v_key, Direction::Press)
+            .map_err(|e| format!("Failed to press V key: {}", e))?;
+        enigo
+            .key(v_key, Direction::Release)
+            .map_err(|e| format!("Failed to release V key: {}", e))?;
+        enigo
+            .key(modifier, Direction::Release)
+            .map_err(|e| format!("Failed to release modifier key: {}", e))?;
     }
-    enigo
-        .key(modifier, Direction::Release)
-        .map_err(|e| format!("Failed to release modifier key: {}", e))?;
 
-    // Small delay to ensure paste completes
-    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+    // Delay before restoring clipboard — heavy apps like VS Code (Electron) need
+    // more time to process the paste event and read the clipboard content.
+    tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
 
     // 4. Restore original clipboard content
     if let Some(content) = original_clipboard {
