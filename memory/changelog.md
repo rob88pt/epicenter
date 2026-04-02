@@ -1,5 +1,34 @@
 # Changelog
 
+## [2026-04-02] - Terminal Detection Bug Fix and Paste Rework
+
+### Fixed
+- **Critical bug**: `"st"` (suckless terminal) in the terminal emulator list was matching `STRING` in xprop output prefix `WM_CLASS(STRING) = ...`, causing every window to be falsely detected as terminal. Ctrl+Shift+V was sent to all apps.
+
+### Changed
+- Replaced enigo with xdotool for Linux key simulation — uses `--clearmodifiers` to prevent modifier interference
+- Terminal detection now parses only the values after `=` in xprop output, not the full prefix
+- Short terminal names (≤3 chars like "st") now use exact quoted matching (`"st"`) to avoid substring false positives
+- Added `windowactivate --sync` to refocus target window before paste
+- Added Escape key press before paste to dismiss Alt-activated menus (workaround)
+- Increased clipboard restore delay from 100ms to 300ms
+
+### Discarded (unnecessary, should be reverted)
+- The Escape key workaround — VS Code issue was caused by user's Alt+D shortcut activating the menu bar, not a code bug
+- The 300ms delay — VS Code paste failed because of menu focus, not timing
+- The windowactivate call — focus wasn't the core problem
+
+### Files Affected
+- `apps/whispering/src-tauri/src/lib.rs` — write_text command reworked for Linux
+
+### Plan for Next Session
+Reset fork to upstream/main and apply ONLY the essential terminal fix:
+1. Parse xprop values after `=` (not the full prefix)
+2. Use exact quoted matching for short terminal names
+3. Keep the change minimal — one small diff on top of upstream
+
+---
+
 ## [2026-04-01] - Terminal Paste Fix and HTTP Plugin Update
 
 ### Added

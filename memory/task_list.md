@@ -1,10 +1,11 @@
 # Task List
 
 ## In Progress
-- [/] Verify terminal paste fix in release `.deb` build (added: 2026-04-01)
-  - Dev build confirmed working for transcription
-  - xprop detection code compiled into release build
-  - `.deb` installed, needs user testing
+- [/] Apply clean terminal detection fix on upstream (added: 2026-04-02)
+  - Reset fork to upstream/main
+  - Apply minimal fix: parse xprop values after `=`, exact match for short names
+  - Test in terminal, VS Code, Chrome, text editor, LibreOffice
+  - Build and install `.deb`
 
 ## Backlog
 - [ ] Monitor upstream PR EpicenterHQ/epicenter#1575 for review (added: 2026-04-01)
@@ -18,3 +19,4 @@
 - [x] Build release `.deb` installer with all fixes (added: 2026-04-01, done: 2026-04-01)
 - [x] Open PR to upstream (added: 2026-04-01, done: 2026-04-01)
 - [x] Install system dependencies for Tauri build on Linux Mint (added: 2026-04-01, done: 2026-04-01)
+- [x] Find "st" matching bug in terminal detection (added: 2026-04-02, done: 2026-04-02)

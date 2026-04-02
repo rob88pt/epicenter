@@ -1,25 +1,24 @@
 # Active Context
 
 ## Current Focus
-Whispering desktop app -- fixing Linux-specific issues and maintaining a fork with patches.
+Whispering desktop app — debugging and fixing Linux paste issues. Need to start fresh from upstream and apply a clean, minimal terminal fix.
 
 ## Recent Changes
-- [2026-04-01] Forked EpicenterHQ/epicenter to rob88pt/epicenter
-- [2026-04-01] Fixed terminal paste: detect terminal windows via `xprop WM_CLASS` and send Ctrl+Shift+V instead of Ctrl+V
-- [2026-04-01] Fixed Groq transcription: updated `tauri-plugin-http` from 2.5.4 to 2.5.7 to fix `fetch_cancel_body` command not found
-- [2026-04-01] Built and installed patched `.deb` locally
-- [2026-04-01] Opened PR EpicenterHQ/epicenter#1575
+- [2026-04-02] Discovered the "st" matching bug: `"st"` (suckless terminal) in the terminal list was matching `STRING` in xprop output prefix `WM_CLASS(STRING) = ...`, causing EVERY window to be detected as terminal → Ctrl+Shift+V sent everywhere
+- [2026-04-02] Replaced enigo with xdotool for Linux paste (more reliable with `--clearmodifiers`)
+- [2026-04-02] Added Escape key workaround and increased clipboard restore delay — these were unnecessary, caused by Alt+D shortcut activating VS Code menu bar
+- [2026-04-02] Pushed changes to `fix/terminal-paste-and-http-plugin` branch but plan to start fresh
 
 ## Next Steps
-- [ ] Verify terminal paste works with the installed `.deb` release build
-- [ ] Monitor PR #1575 for upstream review/merge
-- [ ] Sync fork when upstream merges the PR or releases a new version
+- [ ] Reset fork to upstream/main (clean slate)
+- [ ] Apply ONLY the terminal detection fix (minimal change)
+- [ ] Test thoroughly in terminal, VS Code, Chrome, text editor, LibreOffice before adding more changes
+- [ ] Keep changes minimal to avoid merge conflicts with upstream
 
 ## Blockers / Open Questions
-- The xprop-based terminal detection hasn't been tested in the release `.deb` yet (only confirmed in dev build)
-- VAD (voice-activated detection) mode shows "Failed to get recording stream" errors -- may be a separate issue
+- Alt-based shortcuts (e.g. Alt+D) activate menu bars in apps like VS Code — this is expected OS behavior, NOT a bug in our code. User should use non-Alt shortcuts for push-to-talk if using VS Code.
+- The "2.0.0 update" notification in Whispering was a false alarm — upstream latest is still v7.11.0
 
 ## Session Notes
-- User runs Linux Mint with GNOME Terminal
-- xdotool v3.20160805 does not have `getwindowclassname` -- had to use `xprop` instead
-- Dev build uses `http_localhost_1420` for localstorage origin vs `tauri_localhost_0` in production -- settings don't transfer between dev/prod
+- User prefers minimal changes to avoid merge conflicts with upstream
+- Ghost-chasing: spent time debugging paste issues that were actually caused by the `"st"` matching bug and the Alt+D shortcut, not by enigo, timing, or focus issues

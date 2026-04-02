@@ -46,3 +46,48 @@ Discoveries, patterns, and non-obvious solutions. Recurring patterns get promote
 - **Resolution:** Re-enter settings manually in dev mode, or rename the localstorage file to match the target origin.
 - **See Also:** --
 - **Status:** pending
+
+---
+
+### LRN-004: xprop output format causes substring matching bugs
+- **Logged:** 2026-04-02
+- **Area:** backend
+- **Priority:** critical
+- **Pattern-Key:** linux.xprop_output_parsing
+- **Recurrence-Count:** 1
+- **First-Seen:** 2026-04-02
+- **Last-Seen:** 2026-04-02
+- **Context:** `xprop -id <id> WM_CLASS` outputs `WM_CLASS(STRING) = "instance", "class"`. The word `STRING` in the prefix contains `st`, which matched the suckless terminal entry `"st"` in the terminal list. Every window was falsely detected as a terminal.
+- **Resolution:** Parse only the values after `=` (not the full output line). For short names (≤3 chars), use exact quoted matching: check for `"st"` not just `st` as a substring.
+- **See Also:** LRN-001
+- **Status:** pending
+
+---
+
+### LRN-005: Alt keyboard shortcuts activate menu bars in Linux apps
+- **Logged:** 2026-04-02
+- **Area:** backend
+- **Priority:** medium
+- **Pattern-Key:** linux.alt_key_menu_activation
+- **Recurrence-Count:** 1
+- **First-Seen:** 2026-04-02
+- **Last-Seen:** 2026-04-02
+- **Context:** Using Alt+D as a push-to-talk shortcut causes VS Code (and other apps) to activate the File menu bar when Alt is released. This steals focus from the editor, making subsequent paste operations fail. Not a code bug — standard OS/DE behavior.
+- **Resolution:** Use non-Alt shortcuts for push-to-talk when using VS Code or other apps with Alt-activated menus. Ctrl+Shift combos are safer.
+- **See Also:** --
+- **Status:** pending
+
+---
+
+### LRN-006: Iterate with logging, don't speculate on root causes
+- **Logged:** 2026-04-02
+- **Area:** process
+- **Priority:** high
+- **Pattern-Key:** debugging.log_first_speculate_later
+- **Recurrence-Count:** 1
+- **First-Seen:** 2026-04-02
+- **Last-Seen:** 2026-04-02
+- **Context:** Spent significant time speculating about stuck modifier keys, enigo vs xdotool, timing issues, and focus stealing — all wrong. The actual bug was the "st" matching "STRING" in xprop output, found in seconds once we added logging and checked.
+- **Resolution:** Add logging first, reproduce, read logs. Don't stack changes based on theories. Apply one fix at a time and test.
+- **See Also:** --
+- **Status:** pending
